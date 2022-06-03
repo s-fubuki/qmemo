@@ -1,0 +1,184 @@
+# $Id: qmemo.org,v 1.12 2022-06-02 09:04:17+09 fubuki Exp fubuki $ -*- mode: org -*-
+#+date: Fri May 27 15:46:18 2022
+* qmemo
+  Emacs で作業中ちょっとしたメモをとりたいとき、サっと出してパっと書いてスっとしまえる、
+  そんな操作感を目指したメモです。
+
+  bs-show や which-key のように現在のウィンドウ構成を残したまま最下段に割り込むように開くので、
+  Mew を開いたまま書きたいとき等、他のウィンドウを参照しながら書きたいときに適しています。
+
+  基本的に remember の雰囲気をベースにしています。
+
+* インストール
+   [[https://github.com/s-fubuki/qmemo][ココ]]から落としてload-path を通してあるディレクトリに置き 
+   init.el の中で require します。
+   必要に応じて保存ファイル名やバインドの設定をします[fn::Tools menu にはデフォルトでバインドします(シンプルカルクの下)]。
+
+   以下は参考です[fn:: ユーザ用に予約されていないバインドなので、これで慣れると将来困る可能性があります]。
+
+#+BEGIN_SRC  emacs-lisp
+(require 'qmemo)
+(global-set-key "\M-sm" 'qmemo) 
+(global-set-key "\M-sp" 'qpick) 
+(global-set-key "\M-sh" 'qhead) 
+#+END_SRC
+
+* 使い方
+  できるだけ開いているウィンドウを残したまま一番下に少しだけ開きます。
+  そこに何か書いたら /C-c C-c/ すると保存され再び引っ込みます。
+
+  メモは変数 `qmemo-file-name' に指定されたファイルにプリペンドされていきます。
+  デフォルトは "~/.emacs.d/qmemo/2022-05" のような形式の年月名のファイル名になります。
+
+  キャンセルは /C-c C-k/ または /C-c C-q/ です。
+  後者はメモバッファを残したままウィンドウのみ閉じるので、次に開くと書いたものが残っています。
+
+* カスタマイズ
+** qmemo-window-height: ウィンドウの行数
+   デフォルト は 8 です。
+   mode line とミニバッファを合わせた数になるので、実際のメモウィンドウは
+   ここで設定した値 - 2 になります。
+
+** qmemo-file-name: 記録ファイル名
+   ここで設定したファイルにメモがプリペンドされていきます。
+   無ければ新規に作成されます。
+   
+   デフォルトではファイルが大きくなりすぎるのを避けるため、
+   月イチで新しくするよう Emacs 起動時の日付を見て 
+   "西暦-月" という名前になるよう設定されています。
+   2022年5月なら "~/.emacs.d/qmemo/2022-05" となります。
+   サブディレクトリ qmemo は無ければ作られます。
+
+** qmemo-templete-format: メモのフォーマット
+  各メモはセーブ時に `qmemo-templete-format' で指定した書式でフォーマットされます。
+  デフォルト は "%l%d\n%p%b\n" とほぼ等価のリスト(後述)で以下のような体裁になります。
+  Android Orgzly と連携して使っているので、それに準じたフォーマットになっています。
+
+#+BEGIN_EXAMPLE
+------------------------( C U T   H E R E )---------------------------
+,* メモ body
+:PROPERTIES:
+:CREATED: [2022-01-09 Sun 13:46:15 +0900]
+:BUFFER/FILE: [[c:/ ... /qmemo.org]]
+:PERSON: fubuki@win11
+:END:
+メモ body
+------------------------( C U T   H E R E )---------------------------
+#+END_EXAMPLE
+
+  ヘッドライン行はメモ本体から1行目を切り出したもの、
+  続けて ":PROPERTIES:" から ":END:" の行までがプロパティ枠で
+  日付と時間、 メモを開くときに居たバッファ・ファイル名(ファイルの紐付けがなければバッファ名)とユーザ@マシン名 がプロパティ形式で入り、メモ本体となります。
+
+  但し /C-u C-c C-c/ と prefix 付でフィニッシュしたときは
+  ヘッドラインの次の行に "SCHEDULED: <日付>\n" が挿入されます。
+  これは Orgzly の予定案件である印をつけるためのものです[fn::calendar から qmemo を開くとポイントしている日付になります。]。
+
+** qmemo-templete-format で使える特別なキャラクタ
+
+#+BEGIN_EXAMPLE
+%s  変数 qmemo-system-name の値
+%h  変数 qmemo-host-name の値
+%u  変数 qmemo-user-name の値
+%n  変数 qmemo-user-full-name の値
+%l  変数 qmemo-leader の値
+%d  メモの1行目(%bの1行目)の先頭32文字
+%b  メモ本体
+%m  変数 qmemo-user-mail-address の値
+%U  qmemo-user-name@qmemo-system-name
+%f  メモを起動したときのバッファ名か在ればそのファイル名
+%p  プロパティ・ドロワ・テキスト (変数 `qmemo-properties-string-alist' を元に生成)
+%D  現在の日時
+%%  % そのもの
+#+END_EXAMPLE
+
+- %D の日付の書式は qmemo-time-format で変更できます。関数 `format-time-string' の形式で指定します。
+- %d の長さは変数 `qmemo-description-length' で調整できます。
+- 文字列なので `\n' は改行コードとなります。
+
+#+BEGIN_SRC emacs-lisp
+(setq qmemo-time-format "%F"
+      qmemo-templete-format "%D %n <%m>\n\n%b\n")
+#+END_SRC
+
+等とすれば ChangeLog のような体裁になるといった具合です。
+# この場合メモ本体を自動でインデントさせる仕掛も欲しくなりますが。
+
+** qmemo-templete-format でリストを使う
+`qmemo-templete-format' は `mode-line-format' を簡易に模した作りにしてあるので、
+("" foo bar) などの 変数や文字列を列挙したリストでも指定でき、
+この要素が再帰的に評価され最終的にひとつの文字列として連結されます。
+デフォルトでは Prefix を有効にするためこの書式で記述されています。
+`mode-line-format' 同様変数の中では %LETTER は効力を失ないます。
+
+リストのとき CAR がシンボル :eval なら CDR を評価し
+その他のシンボルの場合、評価して NON-NIL なら nth 1 を、
+NIL なら nth 2 を評価します。 \(COND THEN ELSE).
+ELSE は省略できます。
+
+このコンディション変数に利用できる `qmemo-pre-prefix' と `qmemo-post-prefix' があります。
+前者は qmemo 起動時の prefix で、後者はフィニッシュ時、
+つまり /C-c C-c/ するときの prefix の値が入ります。
+
+シンボルは CAR 以外の位置ならシンボルとして評価されますが t と nil は無視されます。
+
+: See: M-x customize-group qmemo
+* 検索
+  /M-x qpick/ 等と起動してミニバッファにワードを入力する。
+
+  入力した正規表現に一致したメモ・ブロック[fn::メモ・ファイルの中の `qmemo-leader' で開始され、次の `qmemo-leader' 直前かファイル終端までの領域です。]をメモ・ファイルから抽出し、クリエイトの新しい順でバッファに出力します。
+
+  対象のメモ・ファイルは `qmemo-file-name' のディクトリ部分を見て、
+  その中のメモファイルすべてです。
+  但し `qp-ignored-extensions' に列挙された拡張子は対象外となります。
+
+  この動作を抑止したい場合変数 `qmemo-dir' を nil にセットすると
+  そのときの `qmemo-file-name' そのものからだけサーチします。
+
+** note
+   ベースのメジャーモードを軽い outline-mode にしてありますが、
+   変数 `qp-base-mode' を 'org-mode にするとプロパティ部分も折り畳みされます。
+   変更したい場合カスタマイズから変更するか
+   qmemo を require するより前に記述するかして再起動してください。
+
+* 参照
+  `M-x qhead' でカレントのメモ・ファイルの先頭ブロックの参照ができます。
+  プレフィクスでブロック数を指定します。
+  指定しない場合は最新 3 ブロックで、
+  0 を指定すると全ブロックになります。
+
+  無指定時のデフォルトは `qhead-default' で変更できます。
+
+* Orgzly との連携時の注意点
+ 最初にメモを作ってから Orgzly でインポートすればいいだけですが、
+ ファイルを Dropbox に置いた場合注意が必要で 、
+ 更新や同期のタイミングによっては整合性が崩れて
+ エラーで Orgzly で読めなくなってしまいます [fn::ファイルをローカルに置いてリモートにコピーする Dropbox の仕様のため]。
+ そうならないようにするポイントとしては
+
+- Orgzly を自動同期にしない
+- Dropbox 自身が同期するタイムラグもあるので
+  Windows なら /C-c C-c/ 後 、タスクバーの Dropbox アイコンが同期中に青くなるので
+  それが収まった(青が消えた)のを確認してから Orgzly で同期実行する
+- Orgzly から更新する場合も然りなので、一呼吸置いてから同期実行する.
+- qmemo から更新して Orgzly で同期実行する前に Orgzly から追記しない
+- その逆の Orgzly で追記して同期実行する前に qmemo から追記しない
+
+等です。
+もしエラーが出るようになったら Orgzly から qmemo ファイルを「削除」(リモートは残す選択)してから
+「同期」を実行すると治るようです。
+最後の更新は失なわれますが、 再度インポートしないでも自動的に現れます。
+
+ また Orgzly と連携する場合は、
+ 必ずインポートしないといけないため、 
+ `qmemo-file-name' は固定値にしたほうがいいかもしれません。
+
+: (setq qmemo-file-name "~/../Dropbox/orgzly/qmemo.org")
+
+* テスト動作環境
+: "GNU Emacs 29.0.50 (build 1, x86_64-w64-mingw32) of 2022-04-03"
+
+* 関連リンク
+- [[https://orgmode.org][GNU Emacs org-mode]]
+- [[http://www.orgzly.com][Orgzly]]
+# - [[https://github.com/orgzly/orgzly-android][Orgzly Github]]
