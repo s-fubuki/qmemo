@@ -2,8 +2,9 @@
 
 ;; Copyright (C) 2022  Shiina fubuki
 
-;; Author: Shiina fubuki <fubuki@frill.org>
+;; Author: Shiina fubuki <fubukiATfrill.org>
 ;; Keywords: data
+;; Version: $Revision: 1.29 $
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,7 +31,7 @@
 ;; (global-set-key "\M-sm" 'qmemo)
 
 ;;; Code:
-(defconst qmemo-version "$Revision: 1.27 $")
+(defconst qmemo-version "$Revision: 1.29 $")
 (defgroup qmemo nil "qmemo group."
   :prefix "qmemo-"
   :prefix "qp-"
@@ -125,6 +126,11 @@ Total number including mode-line and minibuffer."
   :type  '(choice function (const nil))
   :group 'qmemo)
 
+(defcustom qmemo-create-lockfiles create-lockfiles
+  "ファイル書き込み時の `create-lockfiles' の値."
+  :type  'boolean
+  :group 'qmemo)
+
 (defcustom qp-prompt "Pickup: "
   "Qmemo pickup prompt."
   :type  'string
@@ -186,7 +192,7 @@ Total number including mode-line and minibuffer."
 (defun qmemo-properties-string ()
   (concat ":PROPERTIES:\n"
           (mapconcat #'(lambda (a) (concat (format (car a) (cdr a)) "\n"))
-                     (qmemo-eval-mapcdr qmemo-properties-string-alist))
+                     (qmemo-eval-mapcdr qmemo-properties-string-alist) "")
           ":END:\n"))
 
 (defun qmemo-calendar-date-string ()
@@ -231,11 +237,12 @@ DEPTH が nil のとき string は関数 `qmemo-format' にかけられる.
 (defun qmemo-prepend-region (beg end file)
   "BEG から END の範囲を文字列として FILE 先頭にプリペンド.
 BEG が文字列なら BEG を使う."
-  (let ((str (if (stringp beg) beg (buffer-substring-no-properties beg end))))
+  (let ((str (if (stringp beg) beg (buffer-substring-no-properties beg end)))
+        (create-lockfiles qmemo-create-lockfiles))
     (with-temp-buffer
       (insert str)
       (insert-file-contents file)
-      (write-file file))))
+      (write-region (point-min) (point-max) file))))
 
 (defun qmemo-make-description (body len)
   "BODY 先頭から 長さ LEN だけ切り取った文字列を返す.
@@ -324,6 +331,7 @@ BEG が文字列なら BEG を使う."
   "BODY を `qmemo-format' に依りメモの体裁にし FILE 先頭に追加する.
 FILE は無ければ新規作成する."
   (let* ((buff (get-file-buffer file))
+         (create-lockfiles qmemo-create-lockfiles)
          qmemo)
     (setq qmemo-body (qmemo-add-lf body)
           qmemo-dsc  (qmemo-make-description body qmemo-description-length)
@@ -335,7 +343,7 @@ FILE は無ければ新規作成する."
           (save-excursion
             (goto-char (point-min))
             (insert qmemo)
-            (write-region (point-min) (point-max) file)
+            (write-file file)
             (revert-buffer t t)))))
      ((file-exists-p file)
       (qmemo-prepend-region qmemo nil file))

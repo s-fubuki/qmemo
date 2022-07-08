@@ -1,5 +1,5 @@
 # $Id: qmemo.org,v 1.12 2022-06-02 09:04:17+09 fubuki Exp fubuki $ -*- mode: org -*-
-#+date: Fri May 27 15:46:18 2022
+#+date: Fri Jul  8 13:56:38 2022
 * qmemo
   Emacs で作業中ちょっとしたメモをとりたいとき、サっと出してパっと書いてスっとしまえる、
   そんな操作感を目指したメモです。
@@ -20,7 +20,7 @@
 (require 'qmemo)
 (global-set-key "\M-sm" 'qmemo) 
 (global-set-key "\M-sp" 'qpick) 
-(global-set-key "\M-sh" 'qhead) 
+(global-set-key "\M-sH" 'qhead) 
 #+END_SRC
 
 * 使い方
@@ -176,9 +176,14 @@ ELSE は省略できます。
 : (setq qmemo-file-name "~/../Dropbox/orgzly/qmemo.org")
 
 * テスト動作環境
-: "GNU Emacs 29.0.50 (build 1, x86_64-w64-mingw32) of 2022-04-03"
-
+: GNU Emacs 29.0.50 (build 1, x86_64-w64-mingw32) of 2022-04-03
+: GNU Emacs 28.1 (build 1, x86_64-pc-cygwin, X toolkit, cairo version 1.17.4, Xaw3d scroll bars) of 2022-04-06
 * 関連リンク
 - [[https://orgmode.org][GNU Emacs org-mode]]
 - [[http://www.orgzly.com][Orgzly]]
 # - [[https://github.com/orgzly/orgzly-android][Orgzly Github]]
+* Changes
+** Revision: 1.29
+- fix: mapconcat のセパレータ引数を追加(省略可能なのは Emacs29 からだった).
+- add: 変数 `qmemo-create-lockfiles'. ファイルロック機能をディゼルブ.
+- change: write-region, write-file を file への結びつけを鑑みて配置調整.
