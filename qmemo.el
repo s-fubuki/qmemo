@@ -4,7 +4,7 @@
 
 ;; Author: Shiina fubuki <fubukiATfrill.org>
 ;; Keywords: data
-;; Version: $Revision: 1.29 $
+;; Version: $Revision: 1.30 $
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 ;; (global-set-key "\M-sm" 'qmemo)
 
 ;;; Code:
-(defconst qmemo-version "$Revision: 1.29 $")
+(defconst qmemo-version "$Revision: 1.30 $")
 (defgroup qmemo nil "qmemo group."
   :prefix "qmemo-"
   :prefix "qp-"
@@ -421,6 +421,15 @@ RE-BEG: \"^[^ \\t\\n]\", RE-END: \"\\n\\n\" \
                   (b (qp-created-date (cdr b))))
               (time-less-p a b)))))
 
+(defun qp-exsist-xz-files (files)
+  "FILES の要素の末尾に \".xz\" をつけたものが存在すればそれに置き換える."
+  (mapcar
+   (lambda (f)
+     (if (file-exists-p (concat f ".xz"))
+         (concat f ".xz")
+       f))
+   files))
+
 (defun qp-display
     (regexp files &optional beg end buff mode filter and-match font-lock)
   "REGEXP を含むレコードブロックを FILES リストから抽出して BUFF に表示.
@@ -438,7 +447,7 @@ FONT-LOCK が non-nil なら BEG をハイライトし、 face なら BEG を fa
          (regexp (if (equal regexp "") nil (if and-match (split-string regexp) regexp)))
          result record)
     (unless regexp (error "Input error"))
-    (dolist (f files)
+    (dolist (f (qp-exsist-xz-files files))
       (with-temp-buffer
         (insert-file-contents f)
         (while (setq record (qp-get-record beg end))
