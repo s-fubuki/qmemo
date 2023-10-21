@@ -4,7 +4,7 @@
 
 ;; Author: Shiina fubuki <fubukiATfrill.org>
 ;; Keywords: data
-;; Version: $Revision: 1.30 $
+;; Version: $Revision: 1.31 $
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,7 +31,7 @@
 ;; (global-set-key "\M-sm" 'qmemo)
 
 ;;; Code:
-(defconst qmemo-version "$Revision: 1.30 $")
+(defconst qmemo-version "$Revision: 1.31 $")
 (defgroup qmemo nil "qmemo group."
   :prefix "qmemo-"
   :prefix "qp-"
@@ -520,7 +520,8 @@ ARGS       - 必要なものだけ以下と対にしてプロパティリスト�
  :prefix        コマンド名プレフィクス. 省略すると `bp-prefix'. 
  :prompt        プロンプト. 省略すると `qp-prompt'. 
  :and           non-nil なら サーチワードを空白で分解して and を取る.
- :font-lock     non-nil なら :beg を `font-lock-keywords' に追加する."
+ :font-lock     non-nil なら :beg を `font-lock-keywords' に追加する.
+ :require       引数を require, 複数ならリストで指定する."
   (let* ((sym name)
          (files  (if (consp files) files `(list ,files)))
          (prefix (or (plist-get args :prefix) qp-prefix))
@@ -531,11 +532,15 @@ ARGS       - 必要なものだけ以下と対にしてプロパティリスト�
          (mode   (plist-get args :mode))
          (filter (plist-get args :filter))
          (and-match (plist-get args :and))
-         (add-font-lock (plist-get args :font-lock)))
+         (add-font-lock (plist-get args :font-lock))
+         (req    (plist-get args :require)))
     `(defun ,(intern (concat prefix (symbol-name sym))) (arg)
        ,doc-string
        (interactive
         (let ((arg (read-regexp ,prompt))) (list arg)))
+       (if (consp ,req)
+           (dolist (r ,req) (require r))
+         (and ,req (require ,req)))
        (qp-display
         arg ,files ,beg ,end ,buff ,mode ,filter ,and-match ,add-font-lock))))
 
